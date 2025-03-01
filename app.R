@@ -1,26 +1,17 @@
-library(shiny)
-library(shinythemes)
-library(shinycssloaders)
-library(plotly)
-library(ggplot2)
-library(caret)
-library(dplyr)
-library(sf)
-library(rnaturalearth)
-library(leaflet)
-library(countrycode)
-library(gridExtra)
-library(grid)
-library(cowplot)
-library(randomForest)
-library(pROC)
-library(rpart.plot)
-library(RColorBrewer)
-library(markdown)
+# List of packages
+packages <- c(
+  "shiny", "shinythemes", "shinycssloaders", "plotly", "ggplot2", "caret", 
+  "dplyr", "sf", "rnaturalearth", "leaflet", "countrycode", "gridExtra", 
+  "grid", "cowplot", "randomForest", "pROC", "rpart.plot", "RColorBrewer", "markdown",
+  "rnaturalearthdata"
+)
 
-if (!requireNamespace("rnaturalearthdata", quietly = TRUE)) {
-  install.packages("rnaturalearthdata")
-  library("rnaturalearthdata", character.only = TRUE)
+# Check and install packages if not already installed
+for(pkg in packages) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    install.packages(pkg)
+  }
+  library(pkg, character.only = TRUE)
 }
 
 source('functions_pf.R')
