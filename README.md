@@ -41,3 +41,4 @@ The app can be ran from the app.R file, provided all aforementioned files are pr
 * shinycssloaders
 * lattice
 * markdown
+* shinylive
