@@ -1,0 +1,192 @@
+---
+title: "Alzheimer prediction"
+author: "Lukas"
+date: "`r Sys.Date()`"
+output: html_document
+encoding: "UTF-8"
+---
+
+
+# Preliminary EDA & model training
+
+## Load Required Libraries
+
+```{r,message=F,warning=F}
+# Load libraries
+library(tidyverse)
+library(dplyr)
+library(corrplot)
+library(caret)
+library(ggplot2)
+library(doParallel)
+library(plotly)
+library(reshape2)
+library(rattle)
+library(rpart.plot)
+```
+
+## Reading the data and verifying variable classes
+
+```{r}
+# Read the dataset
+alzheimers_data <- read.csv("alzheimers_prediction_dataset.csv")
+```
+
+```{r}
+# Check the structure of the dataset
+str(alzheimers_data)
+```
+
+```{r}
+# Check for missing values
+missing_values <- colSums(is.na(alzheimers_data))
+print(missing_values)
+```
+
+```{r}
+# Create histograms for numerical variables
+numerical_vars <- sapply(alzheimers_data, is.numeric)
+
+histograms <- alzheimers_data %>%
+  select(all_of(names(numerical_vars)[numerical_vars])) %>%
+  gather(key = "variable", value = "value") %>%
+  ggplot(aes(x = value)) +
+  geom_histogram(binwidth=1, fill = "blue", color = "black", alpha = 0.7) +
+  facet_wrap(~ variable, scales = "free") +
+  labs(title = "Histograms of Numerical Variables",
+       x = "Value",
+       y = "Frequency")
+
+print(histograms)
+```
+
+## Verifying correlation along numerical variables
+
+```{r}
+# Select only numeric columns for correlation analysis
+numeric_data <- alzheimers_data %>%
+  select_if(is.numeric)
+
+# Create a correlation matrix
+cor_matrix <- cor(numeric_data)
+
+# Plot the correlation heatmap
+corrplot(cor_matrix, method = "color", type = "upper",
+         tl.col = "black", tl.srt = 45,
+         number.cex = 0.7)
+```
+
+## Data preparation
+
+```{r,message=F,warning=F}
+# Convert character variables to factors
+alzheimers_data <- alzheimers_data %>%
+  mutate(across(where(is.character), as.factor))
+
+# chaning the names of the factor variables for legibility
+alzheimers_data$Alzheimer.s.Diagnosis<-factor(alzheimers_data$Alzheimer.s.Diagnosis, 
+                    levels = c('No', 'Yes'), 
+                    labels = c('healthy','Alzheimer\'s'))
+
+# renamed one variable due to length
+alzheimers_data$genetic_risk_factor<-alzheimers_data$Genetic.Risk.Factor..APOE.ε4.allele.
+alzheimers_data$Genetic.Risk.Factor..APOE.ε4.allele.<-NULL
+
+
+# Identify the outcome variable
+outcome_var <- "Alzheimer.s.Diagnosis"  # Replace with your actual outcome variable name
+
+# Create a data partition for training and testing sets
+set.seed(123)  # For reproducibility
+trainIndex <- createDataPartition(alzheimers_data[[outcome_var]], p = .8, list = FALSE)
+trainData <- alzheimers_data[trainIndex, ]
+testData  <- alzheimers_data[-trainIndex, ]
+
+write.csv(trainData,file='trainData.csv',row.names = F)
+write.csv(testData,file='testData.csv',row.names = F)
+```
+
+## Data preprocessing
+
+Given the incredible cleanness of the data and outstanding uniformity in variables, it was opted to drop the preprocessing below. The trained models were **unaffected** in their performance. Having the numerical variables unscaled improved the interpretability of the rpart model decision tree visualization. In this regard, it would later be shown that (intuitively) age is an important predictive variable for Alzheimer's diagnosis. If this numeric variable were to be scaled, the cut-off for age (centered around zero) would be less obvious to an end user. 
+
+```{r, message=F,warning=F}
+# data pre processing didn't seem to affect the model performance at all
+
+# Preprocess the data (scale and center numeric variables)
+preProcValues <- preProcess(trainData %>% select(-(outcome_var)), method = c("center", "scale"))
+
+trainDataProc <- predict(preProcValues, trainData %>% select(-(outcome_var)))
+testDataProc  <- predict(preProcValues, testData %>% select(-(outcome_var)))
+
+# Convert factor variables to dummy/indicator variables using model.matrix
+trainDummy <-data.frame(model.matrix(~ . - 1, data = trainDataProc))
+testDummy  <-data.frame(model.matrix(~ . - 1, data = testDataProc))
+
+# Combine the processed numeric and dummy variables with the outcome variable
+trainDataProc <- cbind(trainDummy, Alzheimer.s.Diagnosis=trainData[[outcome_var]])
+testDataProc  <- cbind(testDummy, Alzheimer.s.Diagnosis=testData[[outcome_var]])
+```
+
+```{r}
+# Print the first few rows of the processed training data
+str(trainDataProc)
+```
+
+```{r,cache=T,warning=F,message=F,results='hide'}
+# parallellize model training
+
+# Determine the number of cores to use (24 cores)
+num_cores <- detectCores() - 1
+
+# Create a cluster with the specified number of cores
+cl <- makeCluster(num_cores)
+
+# Register the cluster with doParallel package
+registerDoParallel(cl)
+
+set.seed(123)  # For reproducibility
+
+# Each model is evaluated with cross validation as resampling methodology
+# The default for cv is 10 (10 folds of data, each being used once as validation)
+# Other model parameters such as ntree (number of trees), cp (complexity) &
+# maxit (max amount of iterations) are set within reason that most variance is captured
+# and going beyond these limits has barely any effect apart from increase in compute time
+
+rf_model <<- train(x = trainData %>% select(-outcome_var),
+                  y = trainData[[outcome_var]],
+                  method = "rf",
+                  ntree = 100,
+                  trControl = trainControl(method='cv'))
+
+rpart_model<<- train(x = trainData %>% select(-outcome_var),
+                  y = trainData[[outcome_var]],
+                  method = "rpart",
+                  minsplit=100, # minimal observations in a node to form a branch 
+                  maxdepth=20, # maximal tree height 
+                  trControl = trainControl(method='cv'),
+                  tuneGrid = expand.grid(cp = seq(0.001, 0.1, by = 0.01)))
+
+nnet_model<<- train(x = trainData %>% select(-outcome_var),
+                  y = trainData[[outcome_var]],
+                  method = "nnet",
+                  maxit=200,
+                  trControl = trainControl(method='cv'))
+stopCluster(cl)
+```
+
+## Saving the trained models in a list 
+
+```{r,eval=F}
+# Assuming models is a list containing all your model objects
+models <- list(rf_model = rf_model, 
+               rpart_model = rpart_model, 
+               nnet_model = nnet_model)
+
+# Save the entire list of models to a single RDS file
+names(models)<- c('Random Forest',
+                  'Recursive partioning & regression trees',
+                  'Neural Network')
+saveRDS(models, "all_models.RDS")
+```
+
