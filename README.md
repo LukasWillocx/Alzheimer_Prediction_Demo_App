@@ -16,3 +16,28 @@ This folder contains all files as it relates to running the Alzheimer_Prediction
 
 * alzheimer_prediction_dataset.csv / testData.csv / trainData.csv : **the original dataset and its subdivided test and training set, as generated in alzheimer.Rmd. **
 
+### Running the app
+
+The app can be ran from the app.R file, provided all aforementioned files are present. If the embedded markdown files are not provided in the www subfolder, they will not be incorporated, but this won't affect any of the app's functionality. 
+
+#### Dependent libraties
+* shiny 
+* ggplot2
+* dplyr
+* plotly 
+* caret
+* sf
+* rnaturalearth
+* leaflet
+* countrycode
+* grid
+* gridExtra
+* cowplot
+* randomForest
+* pROC
+* rpart.plot
+* RColorBrewer
+* shinythemes
+* shinycssloaders
+* lattice
+* markdown
