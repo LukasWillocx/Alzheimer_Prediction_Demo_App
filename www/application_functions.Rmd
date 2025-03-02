@@ -3,12 +3,8 @@ title: "Application Functions"
 date: "`r Sys.Date()`"
 output: html_document
 ---
-
-```{r, eval = F, message=F,warning=F}
-# functions.R
-# Dependent libraries in app.R file
-
-# Function to make predictions using the trained model and test data
+### Function to make predictions using the preloaded trained model and test data
+```{r}
 make_predictions <- function(model, test_data) {
   
   acts<-data.frame(test_data$Alzheimer.s.Diagnosis)
@@ -26,8 +22,12 @@ make_predictions <- function(model, test_data) {
   
   return(predictions)
 }
+```
 
-# Function to calculate confusion matrix elements
+
+### Function to calculate confusion matrix elements
+
+```{r}
 calculate_confusion_matrix <- function(true_labels, predicted_labels) {
   tp <- sum((true_labels == 'Alzheimer\'s') & (predicted_labels == 'Alzheimer\'s'))
   tn <- sum((true_labels == 'healthy') & (predicted_labels == 'healthy'))
@@ -36,8 +36,11 @@ calculate_confusion_matrix <- function(true_labels, predicted_labels) {
   
   return(list(tp = tp, tn = tn, fp = fp, fn = fn))
 }
+```
 
-# Function to plot a bar graph of true positives, true negatives, false positives, and false negatives
+### Function to plot model characteristics of true positives, true negatives, false positives, and false negatives
+
+```{r}
 plot_confusion_matrix <- function(conf_matrix) {
   # Create a data frame for plotting
   conf_data <- data.frame(
@@ -68,7 +71,12 @@ plot_confusion_matrix <- function(conf_matrix) {
     ) +
     labs(title = "", x = "", y = "")
 }
-# Function to display model accuracy metrics as a barplot
+```
+
+
+### Function to display model accuracy metrics as a barplot
+
+```{r}
 plot_model_accuracy<-function(model,test_data){
   
   pred_data<-make_predictions(model,test_data)
@@ -110,10 +118,14 @@ ggplot(metrics_df, aes(x = Metric, y = Value)) +
          x = "",
          y = "") +
     theme(axis.text.x = element_text(angle = 35, hjust = 1))  # Rotate x-axis labels for readability
-  
 }
+```
 
-# Function that plots the model predictions in a PC vector space 
+
+
+### Function that plots the model predictions in a PC vector space 
+
+```{r}
 pca_accuracy_plotter<-function(test_data,model,space='3D'){
   
   test_data_dummy<-test_data %>%
@@ -198,9 +210,12 @@ pca_accuracy_plotter<-function(test_data,model,space='3D'){
     return(plot)
   }
 }
+```
 
 
-# function to return the most dominant variables in a PC, tabulated  
+### Function to return the most dominant variables in a principal component 
+
+```{r}
 extract_dominant_variables <- function(pca_result, space='2D', n = 5) {
   
   # Extract the rotation matrix (loadings)
@@ -228,8 +243,13 @@ extract_dominant_variables <- function(pca_result, space='2D', n = 5) {
     x[is.na(x)] <- " "
     return(x)}))
 }
+```
 
-# function that returns a stacked barchart for each categorical variable
+
+
+### Function that plots a stacked barchart for each categorical variable
+
+```{r}
 plot_categorical_variables <- function(df) {
   # Convert character columns to factors if they aren't already
   df <- df %>%
@@ -290,10 +310,15 @@ plot_categorical_variables <- function(df) {
             margin=c(0.01,0.01,0.04,0.04),
             shareY = T)
 }
+```
 
 
 
-# Function to plot numerical variables as histograms
+
+
+### Function to plot numerical variables as histograms
+
+```{r}
 plot_numerical_variables <- function(df) {
   numeric_vars <- df[, sapply(df, is.numeric)]
   plots <- list()
@@ -325,8 +350,13 @@ plot_numerical_variables <- function(df) {
           titleX = T,
           margin=c(0.05,0.05,0.05,0.15))
 }
+```
 
-# function to plot the study participants as counts per country on a map
+
+
+### Function to plot the study participants as counts per country on an interactive worldmap
+
+```{r}
 plot_country_count<-function(df){
   country_freq<-df%>% group_by(Country) %>% count()
   
@@ -354,8 +384,12 @@ plot_country_count<-function(df){
       popup = ~paste(Country, "<br>", "Amount of participants:", n))%>%
     setView(lng = 0, lat = 48.0, zoom = 1.2) 
 }
+```
 
-# function to create receiver operating characteristics curves
+
+### Function to create receiver operating characteristics (ROC) curves
+
+```{r}
 create_roc_plots <- function(models, test_data) {
   
   # Force 'healthy' to be the reference level
@@ -425,8 +459,12 @@ create_roc_plots <- function(models, test_data) {
   
   ggplotly(p)
 }
+```
 
-# Function to return the decision tree corresponding to an rpart model
+
+### Function to return the decision tree corresponding to an rpart model
+
+```{r}
 rpart_plot<-function(rpart_model){
 
   rpart.plot(rpart_model$finalModel,
@@ -436,6 +474,6 @@ rpart_plot<-function(rpart_model){
              box.palette = "BuRd",  # Color palette for boxes
              )
 }
-  
 
 ```
+  

@@ -3,7 +3,7 @@ packages <- c(
   "shiny", "shinythemes", "shinycssloaders", "plotly", "ggplot2", "caret", 
   "dplyr", "sf", "rnaturalearth", "leaflet", "countrycode", "gridExtra", 
   "grid", "cowplot", "randomForest", "pROC", "rpart.plot", "RColorBrewer", "markdown",
-  "rnaturalearthdata"
+  "rnaturalearthdata", "rattle","doParallel"
 )
 
 # Check and install packages if not already installed
@@ -17,12 +17,6 @@ for(pkg in packages) {
 source('functions_pf.R')
 
 Sys.setlocale("LC_CTYPE", "en_US.UTF-8")
-
-libraries <- c("shiny", "ggplot2", "dplyr","plotly", "caret",
-               "sf","rnaturalearth","leaflet","countrycode","grid",
-               "gridExtra","cowplot","randomForest","pROC","rpart.plot",
-               "RColorBrewer",'shinythemes','shinycssloaders','lattice','markdown')
-
 
 ui <- fluidPage(
   includeCSS("pf_styles.css"),
@@ -72,7 +66,7 @@ ui <- fluidPage(
       tags$div(style = "text-align: center",h5('R Libraries')),
       hr(),
       tags$ul(style = "list-style-type: none; padding-left: 0;", 
-              lapply(libraries, function(lib) {
+              lapply(packages, function(lib) {
                 tags$li(style = "display: inline-block; margin: 5px; text-align: center;",
                         tags$span(
                           style = "border-radius: 20%; background-color: var(--background-color); padding: 5px;",
