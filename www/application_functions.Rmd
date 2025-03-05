@@ -338,7 +338,7 @@ plot_numerical_variables <- function(df) {
         # Change text color to #7aa6a1 for all relevant elements
         axis.title = element_text(color = "#7aa6a1"),
         axis.text = element_text(color = "#7aa6a1"),
-        axis.ticks.y = element_line(color = "#7aa6a1"),
+        axis.ticks = element_line(color = "#7aa6a1"),
         plot.title = element_text(color = "#7aa6a1"),
       )
     suppressWarnings(plots[var] <- ggplotly(p))
