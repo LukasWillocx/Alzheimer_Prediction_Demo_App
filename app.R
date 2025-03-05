@@ -48,7 +48,7 @@ ui <- fluidPage(
                   choices = c('Random Forest',
                               'Recursive partioning & regression trees',
                               'Neural Network')),
-      selectInput("space", "Choose PCA plotting dimension:",
+      selectInput("space", "Choose PC plotting dimension:",
                   choices = c('2D',
                               '3D')),
       hr(),
