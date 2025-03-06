@@ -157,11 +157,12 @@ server <- function(input, output) {
     preds<-make_predictions(models[input$model],testData)
     confm<-calculate_confusion_matrix(preds$actual,preds$pred)
     p<-plot_confusion_matrix(confm)
-    ggplotly(p)
+    ggplotly(p,tooltip = c("x", "y", "text"))
   })
   
   output$metric2<-renderPlotly({
-    plot_model_accuracy(models[input$model],testData)
+    p <- plot_model_accuracy(models[input$model],testData)
+    ggplotly(p,tooltip = c("x", "y", "text"))
   })
   output$metric3<-renderPlotly({
     pca_accuracy_plotter(testData,models[input$model],input$space)
