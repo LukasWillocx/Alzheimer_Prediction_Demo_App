@@ -1,6 +1,9 @@
 # functions.R
 # Dependent libraries in app.R file
 
+library(luwitemplate)
+colors<-get_theme_colors()
+
 # Function to make predictions using the trained model and test data
 make_predictions <- function(model, test_data) {
   
@@ -39,27 +42,18 @@ plot_confusion_matrix <- function(conf_matrix) {
     Count = c(conf_matrix$tp, conf_matrix$tn, conf_matrix$fp, conf_matrix$fn)
   )
   # Define the fill colors for each category
-  color_palette <- c("False Negatives" = "#FDCDAC",  
-                     "False Positives" = '#FBB4AE',  
-                     "True Negatives" = "#B3CDE0",    
-                     "True Positives" = "#A8DDB5") 
+  color_palette <- c("False Negatives" = "#D48050",  
+                     "False Positives" = '#D05A4F',  
+                     "True Negatives" = "#5580A3",    
+                     "True Positives" = "#4A9466") 
   # Create the bar plot
   ggplot(conf_data, aes(x = Category, y = Count, fill = Category)) +
     geom_bar(stat = "identity") +
     scale_fill_manual(values=color_palette) +
     theme_minimal() +  
-    theme(
-      plot.background = element_rect(fill = NA), # Make the plot background transparent
-      panel.background = element_rect(fill = NA), 
-      panel.grid.minor = element_blank(),
-      panel.grid.major.x = element_blank(),
-      panel.grid.major.y =element_line(color = "#BEBEBE"),
-      legend.position='none',
-      axis.title = element_text(color = "#7aa6a1"),
-      axis.text = element_text(color = "#7aa6a1"),
-      plot.title = element_text(color = "#7aa6a1"),
-    ) +
-    labs(title = "", x = "", y = "")
+    theme_luwi()+
+    labs(title = "", x = "", y = "")+
+    guides(fill='none')
 }
 
 plot_model_accuracy<-function(model,test_data){
@@ -80,30 +74,19 @@ plot_model_accuracy<-function(model,test_data){
     Value = c(accuracy, sensitivity, specificity, kappa)
   )
   
-ggplot(metrics_df, aes(x = Metric, y = Value)) +
-    geom_bar(stat = "identity",aes(fill=Value)) +
-    coord_flip() +  # Flip the coordinates to make bars horizontal
-    scale_fill_gradient(low = "#A8bDB5", high = "#A8DDB5")  + 
-    scale_y_continuous(limits = c(0, 1)) +
-  
-  theme_minimal() +  # Start with a minimal theme
-  theme(
-    plot.background = element_rect(fill = NA), # Make the plot background transparent
-    panel.background = element_rect(fill = NA), 
-    legend.position='none',
+  ggplot(metrics_df, aes(x = Metric, y = Value)) +
+      geom_bar(stat = "identity",aes(fill=Value)) +
+      coord_flip() +  # Flip the coordinates to make bars horizontal
+      scale_fill_gradient(low = 'darkgrey', high = colors$success)  + 
+      scale_y_continuous(limits = c(0, 1)) +
     
-    # Change text color to #7aa6a1 for all relevant elements
-    axis.title = element_text(color = "#7aa6a1"),
-    axis.text = element_text(color = "#7aa6a1"),
-    plot.title = element_text(color = "#7aa6a1"),
-    panel.grid.major.y  = element_blank(),
-    panel.grid.minor.y = element_line(color = "#BEBEBE"),
-  ) +
-    labs(title = "",
-         x = "",
-         y = "") +
-    theme(axis.text.x = element_text(angle = 35, hjust = 1))  # Rotate x-axis labels for readability
-  
+    theme_minimal() +  # Start with a minimal theme
+    theme_luwi() +
+    guides(fill='none')+
+      labs(title = "",
+           x = "",
+           y = "") +
+      theme(axis.text.x = element_text(angle = 35, hjust = 1))  # Rotate x-axis labels for readability
 }
 
 
@@ -128,10 +111,10 @@ pca_accuracy_plotter<-function(test_data,model,space='3D'){
   pca_df$accuracy<-pred$accuracy
   
   color_palette <- c(
-    `True Positive` = "#A8DDB5",
-    `True Negative` = "#B3CDE0",
-    `False Positive` = "#FBB4AE",
-    `False Negative` = "#FDCDAC"
+    `True Positive` = "#4A9466",  
+    `True Negative` = "#5580A3",  
+    `False Positive` = "#D05A4F",
+    `False Negative` = "#D48050"  
   )
   
   if (space == '2D'){
@@ -144,19 +127,7 @@ pca_accuracy_plotter<-function(test_data,model,space='3D'){
       labs(title = "",
            x = "PC1",
            y = "PC2") +
-      theme_minimal() +  # Start with a minimal theme
-      theme(
-        plot.background = element_rect(fill = NA), # Make the plot background transparent
-        panel.background = element_rect(fill = NA), 
-        
-        # Change text color to #7aa6a1 for all relevant elements
-        axis.title = element_text(color = "#7aa6a1"),
-        axis.text = element_text(color = "#7aa6a1"),
-        plot.title = element_text(color = "#7aa6a1"),
-        legend.text = element_text(color = "#7aa6a1"),
-        legend.position = "right",                      # Position legend on right side
-        legend.justification = c(1, 0.5),               # Center vertically
-      ) 
+      theme_luwi()
     return(plot)
   }
   if (space =='3D'){
@@ -166,25 +137,25 @@ pca_accuracy_plotter<-function(test_data,model,space='3D'){
       layout(
         paper_bgcolor = "rgba(0, 0, 0, 0)",  # Transparent background
         plot_bgcolor = "rgba(0, 0, 0, 0)",
-        legend = list(font = list(color = "#7aa6a1")),  # Legend color
+        legend = list(font = list(color = colors$body_color)),  # Legend color
         scene = list(
           xaxis = list(
             title='PC1',
-            titlefont = list(color = "#7aa6a1"),  # Axis text and tick colors
+            titlefont = list(color = colors$body_color),  # Axis text and tick colors
             showticklabels = TRUE,
-            tickfont = list(color = "#7aa6a1")
+            tickfont = list(color = colors$body_color)
           ),
           yaxis = list(
             title='PC2',
-            titlefont = list(color = "#7aa6a1"),
+            titlefont = list(color = colors$body_color),
             showticklabels = TRUE,
-            tickfont = list(color = "#7aa6a1")
+            tickfont = list(color = colors$body_color)
           ),
           zaxis = list(
             title='PC3',
-            titlefont = list(color = "#7aa6a1"),
+            titlefont = list(color = colors$body_color),
             showticklabels = TRUE,
-            tickfont = list(color = "#7aa6a1")
+            tickfont = list(color = colors$body_color)
           )
         )
       )
@@ -247,9 +218,9 @@ plot_categorical_variables <- function(df) {
     # coloration of outcome variable
     data$group <- data[[var]]  # stores factor names 
     if (var == 'Alzheimer.s.Diagnosis'){
-      text_color<-'darkorange'
+      text_color<-colors$danger
     }else{
-      text_color<-"#7aa6a1"
+      text_color<-colors$dark
     }
     
     p <- ggplot(data, aes(x=var,y = n, fill = group)) +
@@ -258,21 +229,12 @@ plot_categorical_variables <- function(df) {
       geom_text(aes(label = group),
                 position = position_stack(vjust = 0.5),
                 size=3)+
-      theme(
-        legend.position = 'none',
-        plot.background = element_rect(fill = NA), # Make the plot background transparent
-        panel.background = element_rect(fill = NA), 
-        panel.grid.major.y = element_blank(),
-        panel.grid.major.x = element_blank(),
-        # Change text color for all relevant elements + identify outcome variable
-        axis.title = element_text(color = text_color),
-        axis.text = element_text(color = text_color),
-        axis.ticks.y = element_line(color = text_color),
-        axis.ticks.x = element_line(color = text_color),
-        plot.title = element_text(color = text_color),
-      )+
-      scale_x_discrete(position='top')+
-      scale_fill_manual(values=c('#c5c98d','#c6bfd7','#ffd7c6'))
+      theme_luwi()+
+      theme(panel.grid.major.y = element_blank(),
+            panel.grid.major.x = element_blank(),
+            axis.text = element_text(color = text_color))+
+      guides(fill='none')+
+      scale_fill_manual(values=c(colors$secondary,colors$info,colors$warning))
     
     suppressWarnings(plots[var] <-ggplotly(p)) # Store each plot in the list
 }
@@ -295,29 +257,22 @@ plot_numerical_variables <- function(df) {
   # Create a plot for each numeric variable
   for (var in names(numeric_vars)) {
     p <- ggplot(numeric_vars, aes_string(x = var)) +
-      geom_histogram(binwidth = 1,fill = "#ffd7c6", color = "#c6bfd7") +
+      geom_histogram(binwidth = 1,fill = colors$secondary, color = colors$primary) +
       xlab(var) + 
       ylab("") + 
-      ggtitle('')+
-      theme(
-        plot.background = element_rect(fill = NA), # Make the plot background transparent
-        panel.background = element_rect(fill = NA), 
-        panel.grid.major.y = element_blank(),
-        panel.grid.major.x = element_blank(),
-        # Change text color to #7aa6a1 for all relevant elements
-        axis.title = element_text(color = "#7aa6a1"),
-        axis.text = element_text(color = "#7aa6a1"),
-        axis.ticks = element_line(color = "#7aa6a1"),
-        plot.title = element_text(color = "#7aa6a1"),
-      )
+      ggtitle('') +
+      theme_luwi() +
+      theme(panel.grid.major.y = element_blank(),
+            panel.grid.major.x = element_blank())
     suppressWarnings(plots[var] <- ggplotly(p))
   }
   
   # Use subplot to arrange in a 2x2 grid
   subplot(plots,
           nrows = 2,
-          titleX = T,
-          margin=c(0.05,0.05,0.05,0.15))
+          titleX = TRUE,
+          heights = c(0.45, 0.45),  # Slightly reduce heights to create more space
+          margin = c(0.02,0.02,0.17,0.17))
 }
 
 
@@ -391,47 +346,36 @@ create_roc_plots <- function(models, test_data) {
   
   
   # Plot using ggplot2
-  p<-ggplot(roc_combined_df, aes(x = 1-specificity, y = sensitivity, color = model)) +
-    geom_line() +
-    geom_point() +
-    geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "gray") + # Add the random guess line
+  p<-ggplot(roc_combined_df, aes(x = 1-specificity, y = sensitivity)) +
+    geom_line(aes(color=model),size=0.5,alpha=0.6) +
+    geom_point(aes(color=model),size=3,alpha=0.6) +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = colors$info) + # Add the random guess line
     geom_text(data = data.frame(model = names(roc_list), auc_values),
-              aes(x = 0.8,
-                  y = c(0.35,0.45,0.55),
+              aes(x = 0.35,
+                  y = c(0.55,0.58,0.61),
                   color=model), 
               label = paste("AUC =", round(auc_values, 2)),
               hjust = 0.5,
               vjust = 1) +
     labs(title = "ROC Curves", x = "1-Specificity", y = "Sensitivity") +
-    theme_minimal()+ 
-    ggtitle('')+
-    theme(
-      plot.background = element_rect(fill = NA), # Make the plot background transparent
-      panel.background = element_rect(fill = NA), 
-      panel.grid.minor = element_blank(),
-      panel.grid.major =element_line(color = "#BEBEBE", linetype = 4),
-      axis.title = element_text(color = "#7aa6a1"),
-      axis.text = element_text(color = "#7aa6a1"),
-      axis.ticks = element_line(color = "#7aa6a1"),
-      plot.title = element_text(color = "#7aa6a1"),
-      legend.text = element_text(color = "#7aa6a1")
-    )+
-    guides(color = guide_legend(title = NULL))
+    theme_luwi()+ scale_color_luwi_d()+
+    ggtitle('') + guides(color='none')
   
-  ggplotly(p)
+  luwi_ggplotly(p,tooltip = c('x','y','model'))
 }
 
 rpart_plot<-function(rpart_model){
-
   rpart.plot(rpart_model$finalModel,
-             split.font = 2,        # Font style for splits
-             branch.lty = 3,        # Line type for branches
-             cex = 1.1,             # Text size
-             box.palette = "BuRd",  # Color palette for boxes
-             split.box.col = "transparent", # Background color for splits
-             split.border.col = "transparent", # Border color for splits
-             split.col='#7aa6a1',
-             yspace=1
-             )
+             split.font = 1,
+             branch.lty = 4,
+             cex = 1.4,
+             box.palette = "BuRd",
+             split.box.col = colors$light,
+             split.border.col = colors$primary,
+             split.col = colors$primary,
+             split.prefix = "  ",  # Add padding
+             split.suffix = "  ",
+             yspace = 1.2,  # Increase vertical space
+             gap = 0.2)  # Gap between boxes
 }
   
