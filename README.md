@@ -1,12 +1,10 @@
 ## Alzheimer prediction (demo) Application
 
-This folder contains all files as it relates to running the Alzheimer_Prediction_Demo_App, featured in the user's portfolio. 
+> This folder contains all the files as it relates to running the Alzheimer_Prediction_Demo_App, a demonstration using a Kaggle dataset.
 
 ### Files, scripts and functions
 
 * app.R: **the code to run the actual application**
-
-* pf_styles.css: **css file to address the layout, color schemes, dark mode, fonts, etc of the application**
 
 * functions_pf.R: **A script containing all the necessary functions, called by app.R, mostly pertaining to the application's plots**
 
@@ -18,7 +16,7 @@ This folder contains all files as it relates to running the Alzheimer_Prediction
 
 ### Running the app
 
-The app can be ran from the app.R file, provided all aforementioned files are present. If the embedded markdown files are not provided in the www subfolder, they will not be incorporated, but this won't affect any of the app's functionality. 
+The app can be ran from the app.R file, provided all aforementioned files are present. If the embedded markdown files are not provided in the www subfolder, they will not be incorporated, but this won't affect any of the app's functionality as it is plain text. 
 
 #### Dependent libraties
 * shiny 
@@ -41,3 +39,6 @@ The app can be ran from the app.R file, provided all aforementioned files are pr
 * shinycssloaders
 * lattice
 * markdown
+
+#### Custom application styling
+* luwitemplate : **a custom styling package to style an r shiny applications and plotting objects like ggplot and plotly**
