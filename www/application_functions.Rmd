@@ -12,8 +12,6 @@ make_predictions <- function(model, test_data) {
   preds <- data.frame(predict(model, 
                               newdata =test_data))
   
-  preds <- preds
-  
   predictions<-cbind(acts,preds)
   names(predictions)<-c('actual','pred')
   
@@ -49,27 +47,18 @@ plot_confusion_matrix <- function(conf_matrix) {
     Count = c(conf_matrix$tp, conf_matrix$tn, conf_matrix$fp, conf_matrix$fn)
   )
   # Define the fill colors for each category
-  color_palette <- c("False Negatives" = "#FDCDAC",  
-                     "False Positives" = '#FBB4AE',  
-                     "True Negatives" = "#B3CDE0",    
-                     "True Positives" = "#A8DDB5") 
+  color_palette <- c("False Negatives" = "#D48050",  
+                     "False Positives" = '#D05A4F',  
+                     "True Negatives" = "#5580A3",    
+                     "True Positives" = "#4A9466") 
   # Create the bar plot
   ggplot(conf_data, aes(x = Category, y = Count, fill = Category)) +
     geom_bar(stat = "identity") +
     scale_fill_manual(values=color_palette) +
     theme_minimal() +  
-    theme(
-      plot.background = element_rect(fill = NA), # Make the plot background transparent
-      panel.background = element_rect(fill = NA), 
-      panel.grid.minor = element_blank(),
-      panel.grid.major.x = element_blank(),
-      panel.grid.major.y =element_line(color = "#BEBEBE"),
-      legend.position='none',
-      axis.title = element_text(color = "#7aa6a1"),
-      axis.text = element_text(color = "#7aa6a1"),
-      plot.title = element_text(color = "#7aa6a1"),
-    ) +
-    labs(title = "", x = "", y = "")
+    theme_luwi()+
+    labs(title = "", x = "", y = "")+
+    guides(fill='none')
 }
 ```
 
@@ -95,32 +84,20 @@ plot_model_accuracy<-function(model,test_data){
     Value = c(accuracy, sensitivity, specificity, kappa)
   )
   
-ggplot(metrics_df, aes(x = Metric, y = Value)) +
-    geom_bar(stat = "identity",aes(fill=Value)) +
-    coord_flip() +  # Flip the coordinates to make bars horizontal
-    scale_fill_gradient(low = "#A8bDB5", high = "#A8DDB5")  + 
-    scale_y_continuous(limits = c(0, 1)) +
-  
-  theme_minimal() +  # Start with a minimal theme
-  theme(
-    plot.background = element_rect(fill = NA), # Make the plot background transparent
-    panel.background = element_rect(fill = NA), 
-    legend.position='none',
+  ggplot(metrics_df, aes(x = Metric, y = Value)) +
+      geom_bar(stat = "identity",aes(fill=Value)) +
+      coord_flip() +  # Flip the coordinates to make bars horizontal
+      scale_fill_gradient(low = 'darkgrey', high = colors$success)  + 
+      scale_y_continuous(limits = c(0, 1)) +
     
-    # Change text color to #7aa6a1 for all relevant elements
-    axis.title = element_text(color = "#7aa6a1"),
-    axis.text = element_text(color = "#7aa6a1"),
-    plot.title = element_text(color = "#7aa6a1"),
-    panel.grid.major.y  = element_blank(),
-    panel.grid.minor.y = element_line(color = "#BEBEBE"),
-  ) +
-    labs(title = "",
-         x = "",
-         y = "") +
-    theme(axis.text.x = element_text(angle = 35, hjust = 1))  # Rotate x-axis labels for readability
+    theme_luwi() +
+    guides(fill='none')+
+      labs(title = "",
+           x = "",
+           y = "") +
+      theme(axis.text.x = element_text(angle = 35, hjust = 1))
 }
 ```
-
 
 
 ### Function that plots the model predictions in a PC vector space 
@@ -133,7 +110,7 @@ pca_accuracy_plotter<-function(test_data,model,space='3D'){
   test_data_dummy<-model.matrix(~ . - 1, data = test_data_dummy)
   
   pred<-make_predictions(model,test_data)
-  pca_result<<-prcomp(test_data_dummy, # perform PCA and cache results
+  pca_result<<-prcomp(test_data_dummy, 
                      scale.=T)
   pca_df <- as.data.frame(pca_result$x[, 1:3])
   pca_df$Diagnosis <- test_data[["Alzheimer.s.Diagnosis"]]
@@ -147,10 +124,10 @@ pca_accuracy_plotter<-function(test_data,model,space='3D'){
   pca_df$accuracy<-pred$accuracy
   
   color_palette <- c(
-    `True Positive` = "#A8DDB5",
-    `True Negative` = "#B3CDE0",
-    `False Positive` = "#FBB4AE",
-    `False Negative` = "#FDCDAC"
+    `True Positive` = "#4A9466",  
+    `True Negative` = "#5580A3",  
+    `False Positive` = "#D05A4F",
+    `False Negative` = "#D48050"  
   )
   
   if (space == '2D'){
@@ -163,19 +140,7 @@ pca_accuracy_plotter<-function(test_data,model,space='3D'){
       labs(title = "",
            x = "PC1",
            y = "PC2") +
-      theme_minimal() +  # Start with a minimal theme
-      theme(
-        plot.background = element_rect(fill = NA), # Make the plot background transparent
-        panel.background = element_rect(fill = NA), 
-        
-        # Change text color to #7aa6a1 for all relevant elements
-        axis.title = element_text(color = "#7aa6a1"),
-        axis.text = element_text(color = "#7aa6a1"),
-        plot.title = element_text(color = "#7aa6a1"),
-        legend.text = element_text(color = "#7aa6a1"),
-        legend.position = "right",                      # Position legend on right side
-        legend.justification = c(1, 0.5),               # Center vertically
-      ) 
+      theme_luwi()
     return(plot)
   }
   if (space =='3D'){
@@ -183,27 +148,27 @@ pca_accuracy_plotter<-function(test_data,model,space='3D'){
                   colors=color_palette,
                   type = 'scatter3d', mode = 'markers') %>%
       layout(
-        paper_bgcolor = "rgba(0, 0, 0, 0)",  # Transparent background
+        paper_bgcolor = "rgba(0, 0, 0, 0)",  
         plot_bgcolor = "rgba(0, 0, 0, 0)",
-        legend = list(font = list(color = "#7aa6a1")),  # Legend color
+        legend = list(font = list(color = colors$body_color)), 
         scene = list(
           xaxis = list(
             title='PC1',
-            titlefont = list(color = "#7aa6a1"),  # Axis text and tick colors
+            titlefont = list(color = colors$body_color),  
             showticklabels = TRUE,
-            tickfont = list(color = "#7aa6a1")
+            tickfont = list(color = colors$body_color)
           ),
           yaxis = list(
             title='PC2',
-            titlefont = list(color = "#7aa6a1"),
+            titlefont = list(color = colors$body_color),
             showticklabels = TRUE,
-            tickfont = list(color = "#7aa6a1")
+            tickfont = list(color = colors$body_color)
           ),
           zaxis = list(
             title='PC3',
-            titlefont = list(color = "#7aa6a1"),
+            titlefont = list(color = colors$body_color),
             showticklabels = TRUE,
-            tickfont = list(color = "#7aa6a1")
+            tickfont = list(color = colors$body_color)
           )
         )
       )
@@ -251,32 +216,31 @@ extract_dominant_variables <- function(pca_result, space='2D', n = 5) {
 
 ```{r}
 plot_categorical_variables <- function(df) {
-  # Convert character columns to factors if they aren't already
+  # Convert character columns to factors
   df <- df %>%
     mutate(across(where(is.character), as.factor))
   
-  # Remove the 'Country' column if it exists
+  # Remove the 'Country' variable > used for atual mapping
   df <- select(df, -Country)
   df<-df%>%
     select(-where(is.numeric))
-  # Identify categorical columns (factors)
+  # Identify categorical columns
   categorical_cols <- sapply(df, is.factor)
 
   # Create plots for each categorical column using a for loop
-  plots <- list()  # Initialize empty list to store plots
-  num_plots <- sum(categorical_cols)  # Number of categorical variables
+  plots <- list()  
+  num_plots <- sum(categorical_cols)
   
   for(var in names(categorical_cols)) {
     
     data <- df %>%
       count(!!sym(var))
     
-    # coloration of outcome variable
-    data$group <- data[[var]]  # stores factor names 
+    data$group <- data[[var]]  
     if (var == 'Alzheimer.s.Diagnosis'){
-      text_color<-'darkorange'
+      text_color<-colors$danger #highlight the outcome variable 
     }else{
-      text_color<-"#7aa6a1"
+      text_color<-colors$dark
     }
     
     p <- ggplot(data, aes(x=var,y = n, fill = group)) +
@@ -285,25 +249,16 @@ plot_categorical_variables <- function(df) {
       geom_text(aes(label = group),
                 position = position_stack(vjust = 0.5),
                 size=3)+
-      theme(
-        legend.position = 'none',
-        plot.background = element_rect(fill = NA), # Make the plot background transparent
-        panel.background = element_rect(fill = NA), 
-        panel.grid.major.y = element_blank(),
-        panel.grid.major.x = element_blank(),
-        # Change text color for all relevant elements + identify outcome variable
-        axis.title = element_text(color = text_color),
-        axis.text = element_text(color = text_color),
-        axis.ticks.y = element_line(color = text_color),
-        axis.ticks.x = element_line(color = text_color),
-        plot.title = element_text(color = text_color),
-      )+
-      scale_x_discrete(position='top')+
-      scale_fill_manual(values=c('#c5c98d','#c6bfd7','#ffd7c6'))
+      theme_luwi()+
+      theme(panel.grid.major.y = element_blank(),
+            panel.grid.major.x = element_blank(),
+            axis.text = element_text(color = text_color))+
+      guides(fill='none')+
+      scale_fill_manual(values=c(colors$secondary,colors$info,colors$warning))
     
-    suppressWarnings(plots[var] <-ggplotly(p)) # Store each plot in the list
+    suppressWarnings(plots[var] <-ggplotly(p)) 
 }
-    #plotting the ggplotly categorical variables in a grid
+    #use subplot to arrange in 4x5 grid
     subplot(plots,
             nrows=4,
             titleX=T,
@@ -326,29 +281,22 @@ plot_numerical_variables <- function(df) {
   # Create a plot for each numeric variable
   for (var in names(numeric_vars)) {
     p <- ggplot(numeric_vars, aes_string(x = var)) +
-      geom_histogram(binwidth = 1,fill = "#ffd7c6", color = "#c6bfd7") +
+      geom_histogram(binwidth = 1,fill = colors$secondary, color = colors$primary) +
       xlab(var) + 
       ylab("") + 
-      ggtitle('')+
-      theme(
-        plot.background = element_rect(fill = NA), # Make the plot background transparent
-        panel.background = element_rect(fill = NA), 
-        panel.grid.major.y = element_blank(),
-        panel.grid.major.x = element_blank(),
-        # Change text color to #7aa6a1 for all relevant elements
-        axis.title = element_text(color = "#7aa6a1"),
-        axis.text = element_text(color = "#7aa6a1"),
-        axis.ticks = element_line(color = "#7aa6a1"),
-        plot.title = element_text(color = "#7aa6a1"),
-      )
+      ggtitle('') +
+      theme_luwi() +
+      theme(panel.grid.major.y = element_blank(),
+            panel.grid.major.x = element_blank())
     suppressWarnings(plots[var] <- ggplotly(p))
   }
   
   # Use subplot to arrange in a 2x2 grid
   subplot(plots,
           nrows = 2,
-          titleX = T,
-          margin=c(0.05,0.05,0.05,0.15))
+          titleX = TRUE,
+          heights = c(0.45, 0.45),
+          margin = c(0.02,0.02,0.17,0.17))
 }
 ```
 
@@ -360,22 +308,23 @@ plot_numerical_variables <- function(df) {
 plot_country_count<-function(df){
   country_freq<-df%>% group_by(Country) %>% count()
   
-  # Reformat country names that aren't in long format
+  # Reformat country names that aren't in long format (consistency)
   country_freq$Country[19:20]<-c('United Kingdom','United States of America') 
   
   # Load world map data
   world <- ne_countries(scale = "medium", returnclass = "sf")
   
-  # Merge data
+  # Merge data, add geometries to the dataset's country variable
   merged_data <- country_freq %>%
     left_join(world %>% select(name, geometry), by = c("Country" = "name"))
   
-  # Extract coordinate data
+  # Extract coordinate data (stored as lon/lat)
   merged_data <- merged_data %>%
     mutate(lat=st_centroid(geometry)[[1]][2],
            lon=st_centroid(geometry)[[1]][1])
   
   # plot on an interactive world map through leaflet
+  # funnily, this innaccurately places France in Spain, yet to be resolved
   leaflet(data = merged_data) %>%
     addTiles() %>%
     addMarkers(
@@ -430,34 +379,22 @@ create_roc_plots <- function(models, test_data) {
   
   
   # Plot using ggplot2
-  p<-ggplot(roc_combined_df, aes(x = 1-specificity, y = sensitivity, color = model)) +
-    geom_line() +
-    geom_point() +
-    geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "gray") + # Add the random guess line
+  p<-ggplot(roc_combined_df, aes(x = 1-specificity, y = sensitivity)) +
+    geom_line(aes(color=model),size=0.5,alpha=0.6) +
+    geom_point(aes(color=model),size=3,alpha=0.6) +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = colors$info) + # Add the random guess line
     geom_text(data = data.frame(model = names(roc_list), auc_values),
-              aes(x = 0.8,
-                  y = c(0.35,0.45,0.55),
+              aes(x = 0.35,
+                  y = c(0.55,0.58,0.61),
                   color=model), 
               label = paste("AUC =", round(auc_values, 2)),
               hjust = 0.5,
               vjust = 1) +
     labs(title = "ROC Curves", x = "1-Specificity", y = "Sensitivity") +
-    theme_minimal()+ 
-    ggtitle('')+
-    theme(
-      plot.background = element_rect(fill = NA), # Make the plot background transparent
-      panel.background = element_rect(fill = NA), 
-      panel.grid.minor = element_blank(),
-      panel.grid.major =element_line(color = "#BEBEBE", linetype = 4),
-      axis.title = element_text(color = "#7aa6a1"),
-      axis.text = element_text(color = "#7aa6a1"),
-      axis.ticks = element_line(color = "#7aa6a1"),
-      plot.title = element_text(color = "#7aa6a1"),
-      legend.text = element_text(color = "#7aa6a1")
-    )+
-    guides(color = guide_legend(title = NULL))
+    theme_luwi()+ scale_color_luwi_d()+
+    ggtitle('') + guides(color='none')
   
-  ggplotly(p)
+  luwi_ggplotly(p,tooltip = c('x','y','model'))
 }
 ```
 
@@ -466,14 +403,18 @@ create_roc_plots <- function(models, test_data) {
 
 ```{r}
 rpart_plot<-function(rpart_model){
-
   rpart.plot(rpart_model$finalModel,
-             split.font = 3,        # Font style for splits
-             branch.lty = 3,        # Line type for branches
-             cex = 1.1,             # Text size
-             box.palette = "BuRd",  # Color palette for boxes
-             )
+             split.font = 1,
+             branch.lty = 4,
+             cex = 1.4,
+             box.palette = "BuRd",
+             split.box.col = colors$light,
+             split.border.col = colors$primary,
+             split.col = colors$primary,
+             split.prefix = "  ", 
+             split.suffix = "  ",
+             yspace = 1.2, 
+             gap = 0.2)
 }
-
 ```
   

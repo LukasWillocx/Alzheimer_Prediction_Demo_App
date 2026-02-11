@@ -83,7 +83,7 @@ corrplot(cor_matrix, method = "color", type = "upper",
 alzheimers_data <- alzheimers_data %>%
   mutate(across(where(is.character), as.factor))
 
-# chaning the names of the factor variables for legibility
+# changing the names of the factor variables for legibility
 alzheimers_data$Alzheimer.s.Diagnosis<-factor(alzheimers_data$Alzheimer.s.Diagnosis, 
                     levels = c('No', 'Yes'), 
                     labels = c('healthy','Alzheimer\'s'))
@@ -94,10 +94,10 @@ alzheimers_data$Genetic.Risk.Factor..APOE.ε4.allele.<-NULL
 
 
 # Identify the outcome variable
-outcome_var <- "Alzheimer.s.Diagnosis"  # Replace with your actual outcome variable name
+outcome_var <- "Alzheimer.s.Diagnosis"
 
 # Create a data partition for training and testing sets
-set.seed(123)  # For reproducibility
+set.seed(123)
 trainIndex <- createDataPartition(alzheimers_data[[outcome_var]], p = .8, list = FALSE)
 trainData <- alzheimers_data[trainIndex, ]
 testData  <- alzheimers_data[-trainIndex, ]
