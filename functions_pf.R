@@ -34,7 +34,7 @@ calculate_confusion_matrix <- function(true_labels, predicted_labels) {
 }
 
 # Function to plot a bar graph of true positives, true negatives, false positives, and false negatives
-plot_confusion_matrix <- function(conf_matrix) {
+plot_confusion_matrix <- function(conf_matrix,theme) {
   # Create a data frame for plotting
   conf_data <- data.frame(
     Category = c("True Positives", "True Negatives", "False Positives", "False Negatives"),
@@ -50,13 +50,12 @@ plot_confusion_matrix <- function(conf_matrix) {
   ggplot(conf_data, aes(x = Category, y = Count, fill = Category)) +
     geom_bar(stat = "identity") +
     scale_fill_manual(values=color_palette) +
-    theme_minimal() +  
-    theme_luwi()+
+    theme_luwi(theme)+
     labs(title = "", x = "", y = "")+
     guides(fill='none')
 }
 
-plot_model_accuracy<-function(model,test_data){
+plot_model_accuracy<-function(model,test_data, theme){
   
   pred_data<-make_predictions(model,test_data)
 
@@ -79,9 +78,7 @@ plot_model_accuracy<-function(model,test_data){
       coord_flip() +  # Flip the coordinates to make bars horizontal
       scale_fill_gradient(low = 'darkgrey', high = colors$success)  + 
       scale_y_continuous(limits = c(0, 1)) +
-    
-    theme_minimal() +  # Start with a minimal theme
-    theme_luwi() +
+    theme_luwi(theme) +
     guides(fill='none')+
       labs(title = "",
            x = "",
@@ -89,112 +86,9 @@ plot_model_accuracy<-function(model,test_data){
       theme(axis.text.x = element_text(angle = 35, hjust = 1))  # Rotate x-axis labels for readability
 }
 
-
-pca_accuracy_plotter<-function(test_data,model,space='3D'){
-  
-  test_data_dummy<-test_data %>%
-    select(-Alzheimer.s.Diagnosis)
-  test_data_dummy<-model.matrix(~ . - 1, data = test_data_dummy)
-  
-  pred<-make_predictions(model,test_data)
-  pca_result<<-prcomp(test_data_dummy, # perform PCA and cache results
-                     scale.=T)
-  pca_df <- as.data.frame(pca_result$x[, 1:3])
-  pca_df$Diagnosis <- test_data[["Alzheimer.s.Diagnosis"]]
-  pred <-  pred %>%
-    mutate(accuracy = case_when(
-      actual == 'Alzheimer\'s' & pred == 'Alzheimer\'s' ~ 'True Positive',
-      actual == 'healthy' & pred == 'healthy' ~ 'True Negative',
-      actual == 'healthy' & pred == 'Alzheimer\'s' ~ 'False Positive',
-      actual == 'Alzheimer\'s' & pred == 'healthy' ~ 'False Negative'))
-  
-  pca_df$accuracy<-pred$accuracy
-  
-  color_palette <- c(
-    `True Positive` = "#4A9466",  
-    `True Negative` = "#5580A3",  
-    `False Positive` = "#D05A4F",
-    `False Negative` = "#D48050"  
-  )
-  
-  if (space == '2D'){
-    # Plot the PCA results using ggplot2
-    set.seed(123)
-    plot<-ggplot(pca_df%>% sample_frac(size = 0.07), aes(x = PC1, y = PC2)) +
-      geom_point(aes(color = accuracy), size=3.5, alpha = 0.7) +
-      scale_color_manual(values = color_palette) +
-      guides(colour = guide_legend(title = NULL))+
-      labs(title = "",
-           x = "PC1",
-           y = "PC2") +
-      theme_luwi()
-    return(plot)
-  }
-  if (space =='3D'){
-    plot<-plot_ly(pca_df, x = ~PC1, y = ~PC2, z = ~PC3, color = ~accuracy,
-                  colors=color_palette,
-                  type = 'scatter3d', mode = 'markers') %>%
-      layout(
-        paper_bgcolor = "rgba(0, 0, 0, 0)",  # Transparent background
-        plot_bgcolor = "rgba(0, 0, 0, 0)",
-        legend = list(font = list(color = colors$body_color)),  # Legend color
-        scene = list(
-          xaxis = list(
-            title='PC1',
-            titlefont = list(color = colors$body_color),  # Axis text and tick colors
-            showticklabels = TRUE,
-            tickfont = list(color = colors$body_color)
-          ),
-          yaxis = list(
-            title='PC2',
-            titlefont = list(color = colors$body_color),
-            showticklabels = TRUE,
-            tickfont = list(color = colors$body_color)
-          ),
-          zaxis = list(
-            title='PC3',
-            titlefont = list(color = colors$body_color),
-            showticklabels = TRUE,
-            tickfont = list(color = colors$body_color)
-          )
-        )
-      )
-    return(plot)
-  }
-}
-
-
-extract_dominant_variables <- function(pca_result, space='2D', n = 5) {
-  
-  # Extract the rotation matrix (loadings)
-  loadings <- pca_result$rotation
-  
-  # Remove the last character 'D' and convert to numeric
-  number <- as.numeric(sub("D$", "", space))
-  
-  # Initialize an empty list to store the results
-  results_list <- list()
-  
-  for (i in 1:number){
-  component_loadings <- data.frame(round(loadings[, i, drop = FALSE],2))
-  component_loadings$variable <-rownames(component_loadings)
-  component_loadings <- component_loadings %>% 
-    arrange(desc(abs(.[[1]])))%>%
-    select(variable,everything())
-     
-  results_list[[i]] <-head(component_loadings,n)
-  
-  
-  }
-  var_list<-bind_rows(results_list)
-  return(lapply(var_list, function(x) {
-    x[is.na(x)] <- " "
-    return(x)}))
-}
-
 ######################EDA- functions ###############################
 
-plot_categorical_variables <- function(df) {
+plot_categorical_variables <- function(df, theme) {
   # Convert character columns to factors if they aren't already
   df <- df %>%
     mutate(across(where(is.character), as.factor))
@@ -217,11 +111,6 @@ plot_categorical_variables <- function(df) {
     
     # coloration of outcome variable
     data$group <- data[[var]]  # stores factor names 
-    if (var == 'Alzheimer.s.Diagnosis'){
-      text_color<-colors$danger
-    }else{
-      text_color<-colors$dark
-    }
     
     p <- ggplot(data, aes(x=var,y = n, fill = group)) +
       geom_col(position = 'stack', width = 1) +
@@ -229,14 +118,13 @@ plot_categorical_variables <- function(df) {
       geom_text(aes(label = group),
                 position = position_stack(vjust = 0.5),
                 size=3)+
-      theme_luwi()+
+      theme_luwi(theme)+
       theme(panel.grid.major.y = element_blank(),
-            panel.grid.major.x = element_blank(),
-            axis.text = element_text(color = text_color))+
+            panel.grid.major.x = element_blank())+
       guides(fill='none')+
       scale_fill_manual(values=c(colors$secondary,colors$info,colors$warning))
     
-    suppressWarnings(plots[var] <-ggplotly(p)) # Store each plot in the list
+    suppressWarnings(plots[var] <-ggplotly(p, theme = theme)) # Store each plot in the list
 }
     #plotting the ggplotly categorical variables in a grid
     subplot(plots,
@@ -250,7 +138,7 @@ plot_categorical_variables <- function(df) {
 
 # Function to plot numerical variables 
 
-plot_numerical_variables <- function(df) {
+plot_numerical_variables <- function(df, theme) {
   numeric_vars <- df[, sapply(df, is.numeric)]
   plots <- list()
   
@@ -261,10 +149,10 @@ plot_numerical_variables <- function(df) {
       xlab(var) + 
       ylab("") + 
       ggtitle('') +
-      theme_luwi() +
+      theme_luwi(theme) +
       theme(panel.grid.major.y = element_blank(),
             panel.grid.major.x = element_blank())
-    suppressWarnings(plots[var] <- ggplotly(p))
+    suppressWarnings(plots[var] <- ggplotly(p, theme=theme))
   }
   
   # Use subplot to arrange in a 2x2 grid
@@ -275,38 +163,82 @@ plot_numerical_variables <- function(df) {
           margin = c(0.02,0.02,0.17,0.17))
 }
 
-
-plot_country_count<-function(df){
-  country_freq<-df%>% group_by(Country) %>% count()
+plot_country_count <- function(df) {
+  country_freq <- df %>% group_by(Country) %>% count()
   
   # Reformat country names that aren't in long format
-  country_freq$Country[19:20]<-c('United Kingdom','United States of America') 
+  country_freq$Country[19:20] <- c('United Kingdom', 'United States of America')
   
   # Load world map data
   world <- ne_countries(scale = "medium", returnclass = "sf")
   
   # Merge data
-  merged_data <- country_freq %>%
-    left_join(world %>% select(name, geometry), by = c("Country" = "name"))
+  merged_data <- world %>%
+    left_join(country_freq, by = c("name" = "Country"))
   
-  # Extract coordinate data
-  merged_data <- merged_data %>%
-    mutate(lat=st_centroid(geometry)[[1]][2],
-           lon=st_centroid(geometry)[[1]][1])
+  # Color palette for choropleth
+  pal <- colorNumeric(
+    palette = "YlOrRd",
+    domain = merged_data$n,
+    na.color = "transparent"
+  )
   
-  # plot on an interactive world map through leaflet
+  # Build the map
   leaflet(data = merged_data) %>%
-    addTiles() %>%
-    addMarkers(
-      lng = ~lon,
-      lat = ~lat,
-      popup = ~paste(Country, "<br>", "Amount of participants:", n))%>%
-    setView(lng = 0, lat = 48.0, zoom = 1.2) 
+    addProviderTiles(providers$CartoDB.Positron) %>%
+    
+    addPolygons(
+      fillColor   = ~pal(n),
+      fillOpacity = 0.7,
+      color       = "#444444",
+      weight      = 0.8,
+      opacity     = 1,
+      highlight   = highlightOptions(
+        weight      = 2.5,
+        color       = "#333333",
+        fillOpacity = 0.85,
+        bringToFront = TRUE
+      ),
+      label = ~ifelse(
+        is.na(n),
+        name,
+        paste0(name, ": ", n, " participant", ifelse(n > 1, "s", ""))
+      ),
+      labelOptions = labelOptions(
+        style     = list("font-weight" = "bold", "padding" = "4px 8px"),
+        textsize  = "13px",
+        direction = "auto"
+      ),
+      popup = ~ifelse(
+        is.na(n),
+        paste0("<b>", name, "</b><br>No participants"),
+        paste0(
+          "<div style='font-family: sans-serif;'>",
+          "<b style='font-size:14px;'>", name, "</b><br>",
+          "<span style='font-size:22px; color:", pal(n), ";'>", n, "</span>",
+          " participant", ifelse(n > 1, "s", ""),
+          "</div>"
+        )
+      )
+    ) %>%
+    
+    addLegend(
+      position = "bottomright",
+      pal      = pal,
+      values   = ~n,
+      title    = "Participants",
+      opacity  = 0.8,
+      na.label = "No data"
+    ) %>%
+    
+    setView(lng = 0, lat = 30, zoom = 2)
 }
 
 
 
-create_roc_plots <- function(models, test_data) {
+create_roc_plots <- function(models, test_data, theme) {
+  
+  colors <- get_theme_colors(theme)
   
   # Force 'healthy' to be the reference level
   data<-data.frame(factor(test_data$Alzheimer.s.Diagnosis,levels=c('healthy','Alzheimer\'s')))
@@ -348,26 +280,31 @@ create_roc_plots <- function(models, test_data) {
   # Plot using ggplot2
   p<-ggplot(roc_combined_df, aes(x = 1-specificity, y = sensitivity)) +
     geom_line(aes(color=model),size=0.5,alpha=0.6) +
-    geom_point(aes(color=model),size=3,alpha=0.6) +
+    geom_point(aes(color=model),size=3) +
     geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = colors$info) + # Add the random guess line
     geom_text(data = data.frame(model = names(roc_list), auc_values),
               aes(x = 0.35,
-                  y = c(0.55,0.58,0.61),
+                  y = c(0.54,0.59,0.64),
                   color=model), 
-              label = paste("AUC =", round(auc_values, 2)),
+              label = paste("AUC =", signif(auc_values, 3)),
               hjust = 0.5,
               vjust = 1) +
     labs(title = "ROC Curves", x = "1-Specificity", y = "Sensitivity") +
-    theme_luwi()+ scale_color_luwi_d()+
+    theme_luwi(theme)+ scale_color_luwi_d(theme)+
     ggtitle('') + guides(color='none')
   
-  luwi_ggplotly(p,tooltip = c('x','y','model'))
+  luwi_ggplotly(p, theme=theme,tooltip = c('x','y','model'))
 }
 
-rpart_plot<-function(rpart_model){
+rpart_plot<-function(rpart_model, theme){
+  
+  colors <- get_theme_colors(theme) 
+  fonts <- get_theme_fonts()
+  
   rpart.plot(rpart_model$finalModel,
              split.font = 1,
              branch.lty = 4,
+             branch.col = colors$secondary,
              cex = 1.4,
              box.palette = "BuRd",
              split.box.col = colors$light,
