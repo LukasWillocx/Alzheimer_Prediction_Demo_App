@@ -1,11 +1,18 @@
 # Horizontal Navbar App - Alzheimer's Disease Prediction Model
 
 # List of packages
-packages <- c(
+all_packages <- c(
   "shiny", "shinythemes", "shinycssloaders", "plotly", "ggplot2", "caret", 
-  "dplyr", "sf", "rnaturalearth", "leaflet", "countrycode", "gridExtra", 
+  "dplyr", "sf", "rnaturalearth", "leaflet", "bslib", "countrycode", "gridExtra", 
   "grid", "cowplot", "randomForest", "pROC", "rpart.plot", "RColorBrewer", "markdown",
-  "rnaturalearthdata", "rattle", "doParallel", "luwitemplate", "bslib"
+  "rattle" , "rnaturalearthdata", "doParallel", "luwitemplate"
+)
+
+packages <- c(
+  "shiny", "shinycssloaders", "plotly", "ggplot2", 'caret',
+  "dplyr", "sf", "rnaturalearth", "leaflet", "bslib", "countrycode", "gridExtra", 
+  "grid", "randomForest", "pROC", "rpart.plot", "markdown",
+  "rattle" , "rnaturalearthdata", "luwitemplate"
 )
 
 for(pkg in packages) {
@@ -20,6 +27,7 @@ Sys.setlocale("LC_CTYPE", "en_US.UTF-8")
 ui <- bslib::page_navbar(
   title = "Alzheimer's Disease Prediction Model",
   theme = my_theme(),
+  dark_mode_css(),
   window_title = "Alzheimer Prediction Demo",
   
   # Data Exploration Tab
@@ -27,7 +35,7 @@ ui <- bslib::page_navbar(
     "Data Exploration",
     layout_sidebar(
       sidebar = sidebar(
-        width = 500,
+        width = 600,
         tags$div(
           tags$div(style = "text-align: center", h4('Dataset Information')),
           hr(),
@@ -44,7 +52,7 @@ ui <- bslib::page_navbar(
           hr(),
           tags$ul(
             style = "list-style-type: none; padding-left: 0;", 
-            lapply(packages, function(lib) {
+            lapply(all_packages, function(lib) {
               # Create documentation URL
               if (lib == "luwitemplate") {
                 doc_url <- "https://github.com/LukasWillocx/luwitemplate"
@@ -71,6 +79,15 @@ ui <- bslib::page_navbar(
               )
             })
           )
+        ),
+        tags$div(
+          tags$div(style = "text-align: center", h5('About the Application')),
+          hr(),
+          p('This demonstration features three non-linear machine learning models to predict Alzheimer\'s disease
+            status from 24, predominantly demographic variables. The models were chosen for their particular performant inference. The three models also have their
+            individual merits. Recursive Partioning and Regression Trees have the benefit of interpretability through a single decision tree. Random Forests cope well with overfitting, due to it being an ensemble methodology, through the generation of multiple trees.
+            Neural Networks on the other hand have an advantage by
+            capturing complex interactions, but is the most black-box in nature.')
         )
       ),
       layout_columns(
@@ -106,27 +123,15 @@ ui <- bslib::page_navbar(
     "Model Overview",
     layout_sidebar(
       sidebar = sidebar(
-        width = 500,
+        width = 300,
         h4("Model selection"),
         selectInput("model", "Choose prediction model:",
                     choices = c('Random Forest',
                                 'Recursive partioning & regression trees',
                                 'Neural Network')),
-        selectInput("space", "Choose PC plotting dimension:",
-                    choices = c('2D', '3D')),
-        tags$div(
-          tags$div(style = "text-align: center", h5('About the Application')),
-          hr(),
-          p('This application concerns a demo, featuring three machine learning models to predict Alzheimer\'s disease
-            status from 24 variables, provided in a public kaggle dataset. The models were chosen for their particular performant
-            inference, an important metric given the application is web hosted in a limited and free environment. The three models also have their
-            individual merits. Random Forests cope well with overfitting, due to it being an ensemble methodology. Recursive Partioning and
-            Regression Trees have the benefit of interpretability through decision trees. Neural Networks on the other hand have an advantage by
-            capturing complex non-linear relationships between variables.')
-        )
       ),
       layout_columns(
-        col_widths = c(6, 6, 7, 5),
+        col_widths = c(6, 6,12),
         fill = FALSE,
         card(
           full_screen = T,
@@ -144,42 +149,24 @@ ui <- bslib::page_navbar(
         ),
         card(
           full_screen = T,
-          card_header("Model Accuracy in Principal Component Vector Space"),
+          card_header("Receiver-Operating Characteristics (ROC) Curves & Area Under the Curve (AUC) Values"),
           card_body(
-            withSpinner(plotlyOutput("metric3", height = "360px"))
+            withSpinner(plotlyOutput("roc", height = "400px"))
           )
         ),
-        card(
-          full_screen = T,
-          card_header("Identifying Dominant Variables"),
-          card_body(
-            withSpinner(tableOutput("metric4"))
-          )
-        )
       )
     )
   ),
   
   # Model Comparison Tab
   nav_panel(
-    "Model Comparison",
-    layout_columns(
-      col_widths = c(5, 7),
-      fill = FALSE,
-      card(
-        full_screen = T,
-        card_header("Receiver-Operating Characteristics (ROC) Curves & Area Under the Curve (AUC) Values"),
-        card_body(
-          withSpinner(plotlyOutput("roc", height = "800px"))
-        )
-      ),
+    "Rpart - decision tree",
       card(
         full_screen = T,
         card_header("Decision Making - Recursive Partitioning & Regression Trees"),
         card_body(withSpinner(plotOutput("rpart", height = "800px"))),
         card_footer('Intuitively, Age, Genetic Risk (familial history & ApoE4 genotype) and Country surface as important variables in this determination scheme'),
       )
-    )
   ),
   
   # Model Training Code Tab
@@ -200,11 +187,16 @@ ui <- bslib::page_navbar(
         includeMarkdown('www/application_functions.Rmd')
       )
     )
-  )
+  ),
+  nav_spacer(),
+  nav_item(input_dark_mode(id = "dark_mode")),
 )
 
 # Server
 server <- function(input, output, session) {
+  
+  colors <- get_theme_colors()
+  dm <- use_dark_mode(input, session)
   
   models <- readRDS("all_models.RDS")
   trainData <- read.csv('trainData.csv')
@@ -219,29 +211,21 @@ server <- function(input, output, session) {
   output$metric1 <- renderPlotly({
     preds <- make_predictions(models[input$model], testData)
     confm <- calculate_confusion_matrix(preds$actual, preds$pred)
-    p <- plot_confusion_matrix(confm)
-    luwi_ggplotly(p, tooltip = c("x", "y", "text"))
+    p <- plot_confusion_matrix(confm, theme = dm$theme())
+    luwi_ggplotly(p, theme=dm$theme(), tooltip = c("x", "y", "text"))
   })
   
   output$metric2 <- renderPlotly({
-    p <- plot_model_accuracy(models[input$model], testData)
-    luwi_ggplotly(p, tooltip = c("x", "y", "text"))
-  })
-  
-  output$metric3 <- renderPlotly({
-    pca_accuracy_plotter(testData, models[input$model], input$space)
-  })
-  
-  output$metric4 <- renderTable({
-    extract_dominant_variables(pca_result, input$space, 4)
+    p <- plot_model_accuracy(models[input$model], testData, theme = dm$theme())
+    luwi_ggplotly(p, theme=dm$theme(), tooltip = c("x", "y", "text"))
   })
   
   output$pies <- renderPlotly({
-    plot_categorical_variables(alzheimer_data)
+    plot_categorical_variables(alzheimer_data, theme= dm$theme())
   })
   
   output$bars <- renderPlotly({
-    plot_numerical_variables(alzheimer_data)
+    plot_numerical_variables(alzheimer_data, theme = dm$theme())
   })
   
   output$map <- renderLeaflet({
@@ -249,11 +233,11 @@ server <- function(input, output, session) {
   })
   
   output$roc <- renderPlotly({
-    create_roc_plots(models, testData)
+    create_roc_plots(models, testData, theme = dm$theme())
   })
   
   output$rpart <- renderPlot({
-    rpart_plot(models[[2]])
+    rpart_plot(models[[2]], theme = dm$theme())
   }, bg = 'transparent')
 }
 
