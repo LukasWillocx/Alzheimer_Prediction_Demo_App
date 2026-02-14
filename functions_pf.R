@@ -134,8 +134,6 @@ plot_categorical_variables <- function(df, theme) {
             shareY = T)
 }
 
-
-
 # Function to plot numerical variables 
 
 plot_numerical_variables <- function(df, theme) {
